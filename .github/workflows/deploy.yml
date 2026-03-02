@@ -3,6 +3,7 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches: ["main"]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -24,23 +25,20 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
+          # НЕ ставим cache: npm, потому что в репо нет package-lock.json / yarn.lock
 
       - name: Show versions
         run: |
           node -v
           npm -v
 
-      - name: Install
-        run: |
-          npm install --no-audit --no-fund
-          # Если будет ругаться на peer-deps, замени строку выше на:
-          # npm install --no-audit --no-fund --legacy-peer-deps
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
 
       - name: Build
         run: npm run build
 
-      - name: Upload artifact
+      - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: ./dist
@@ -52,6 +50,6 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Deploy
+      - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
