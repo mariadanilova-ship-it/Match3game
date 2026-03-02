@@ -23,8 +23,6 @@ export function NameInput({ onSubmit }: NameInputProps) {
     if (e.key === 'Enter') handleSubmit();
   };
 
-  const suggestions = ['devRoot', 'nullPanic', 'gitGhost', 'CrashLord', 'BugSlayer'];
-
   return (
     <div className="flex flex-col items-center justify-center h-full bg-[#0A0E1A] px-6"
       style={{ fontFamily: 'Inter, sans-serif' }}>
@@ -96,34 +94,6 @@ export function NameInput({ onSubmit }: NameInputProps) {
               ⚠ {error}
             </motion.p>
           )}
-        </motion.div>
-
-        {/* Suggestions */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.3 }}
-        >
-          <p className="text-[#3D4E6B] text-xs mb-3 text-center" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
-            // suggestions
-          </p>
-          <div className="flex flex-wrap gap-2 justify-center">
-            {suggestions.map((s) => (
-              <button
-                key={s}
-                onClick={() => { setName(s); setError(''); }}
-                className="px-3 py-1.5 rounded-lg text-xs transition-all duration-150 hover:border-[#43D9BB]"
-                style={{
-                  background: '#0F1629',
-                  border: '1.5px solid #1E2D4E',
-                  color: '#6B7FA3',
-                  fontFamily: 'JetBrains Mono, monospace',
-                }}
-              >
-                {s}
-              </button>
-            ))}
-          </div>
         </motion.div>
 
         {/* Submit button */}
