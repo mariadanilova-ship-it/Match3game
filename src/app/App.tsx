@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import type { AppScreen, LevelConfig, LevelResult, LeaderboardEntry } from './components/game/types';
 import { LEVELS } from './components/game/gameData';
@@ -30,6 +30,18 @@ function savePlayerName(name: string) {
   try { localStorage.setItem('bhPlayerName', name); } catch {}
 }
 
+const FRAME_WIDTH = 390;
+const FRAME_HEIGHT = 844;
+const FRAME_MARGIN = 16;
+
+function getFrameScale() {
+  if (typeof window === 'undefined') return 1;
+  const viewport = window.visualViewport;
+  const availableWidth = (viewport?.width ?? window.innerWidth) - FRAME_MARGIN;
+  const availableHeight = (viewport?.height ?? window.innerHeight) - FRAME_MARGIN;
+  return Math.min(1, availableWidth / FRAME_WIDTH, availableHeight / FRAME_HEIGHT);
+}
+
 export default function App() {
   const [screen, setScreen] = useState<AppScreen>('splash');
   const [playerName, setPlayerName] = useState(() => loadPlayerName());
@@ -37,6 +49,7 @@ export default function App() {
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>(loadLeaderboard);
   const [currentLevel, setCurrentLevel] = useState<LevelConfig>(LEVELS[0]);
   const [lastResult, setLastResult] = useState<LevelResult>({ score: 0, stars: 0 });
+  const [frameScale, setFrameScale] = useState(() => Math.max(0.1, getFrameScale()));
 
   const totalStars = Object.values(progress).reduce((a, b) => a + b, 0);
 
@@ -116,120 +129,140 @@ export default function App() {
     else setScreen('name-input');
   }, [playerName]);
 
+  useEffect(() => {
+    const updateFrameScale = () => {
+      setFrameScale(Math.max(0.1, getFrameScale()));
+    };
+
+    updateFrameScale();
+    window.addEventListener('resize', updateFrameScale);
+
+    const viewport = window.visualViewport;
+    viewport?.addEventListener('resize', updateFrameScale);
+
+    return () => {
+      window.removeEventListener('resize', updateFrameScale);
+      viewport?.removeEventListener('resize', updateFrameScale);
+    };
+  }, []);
+
   return (
-    <div className="min-h-screen bg-[#050810] flex items-center justify-center p-2 sm:p-4">
+    <div className="min-h-screen bg-[#050810] flex items-center justify-center p-2 sm:p-4 overflow-hidden">
       {/* Phone frame */}
-      <div
-        className="relative overflow-hidden"
-        style={{
-          width: 390,
-          height: 844,
-          background: '#0A0E1A',
-          borderRadius: 48,
-          border: '2px solid #1A2540',
-          boxShadow: '0 0 0 1px #0D1628, 0 30px 80px rgba(0,0,0,0.7), 0 0 60px rgba(67,217,187,0.05)',
-          fontFamily: 'Inter, sans-serif',
-        }}
-      >
-        {/* Status bar notch */}
-        <div className="absolute top-0 left-0 right-0 z-50 flex justify-center pt-2">
-          <div className="w-28 h-6 rounded-full" style={{ background: '#050810' }}/>
-        </div>
+      <div style={{ width: FRAME_WIDTH * frameScale, height: FRAME_HEIGHT * frameScale }}>
+        <div
+          className="relative overflow-hidden"
+          style={{
+            width: FRAME_WIDTH,
+            height: FRAME_HEIGHT,
+            transform: `scale(${frameScale})`,
+            transformOrigin: 'top left',
+            background: '#0A0E1A',
+            borderRadius: 48,
+            border: '2px solid #1A2540',
+            boxShadow: '0 0 0 1px #0D1628, 0 30px 80px rgba(0,0,0,0.7), 0 0 60px rgba(67,217,187,0.05)',
+            fontFamily: 'Inter, sans-serif',
+          }}
+        >
+          {/* Status bar notch */}
+          <div className="absolute top-0 left-0 right-0 z-50 flex justify-center pt-2">
+            <div className="w-28 h-6 rounded-full" style={{ background: '#050810' }}/>
+          </div>
 
-        {/* Screen content */}
-        <AnimatePresence mode="wait">
-          {screen === 'splash' && (
-            <motion.div key="splash" className="absolute inset-0 pt-8"
-              variants={screenVariants} initial="initial" animate="animate" exit="exit" transition={transition}>
-              <SplashScreen onContinue={handleSplashContinue} />
-            </motion.div>
-          )}
+          {/* Screen content */}
+          <AnimatePresence mode="wait">
+            {screen === 'splash' && (
+              <motion.div key="splash" className="absolute inset-0 pt-8"
+                variants={screenVariants} initial="initial" animate="animate" exit="exit" transition={transition}>
+                <SplashScreen onContinue={handleSplashContinue} />
+              </motion.div>
+            )}
 
-          {screen === 'name-input' && (
-            <motion.div key="name-input" className="absolute inset-0 pt-8"
-              variants={screenVariants} initial="initial" animate="animate" exit="exit" transition={transition}>
-              <NameInput onSubmit={handleNameSubmit} />
-            </motion.div>
-          )}
+            {screen === 'name-input' && (
+              <motion.div key="name-input" className="absolute inset-0 pt-8"
+                variants={screenVariants} initial="initial" animate="animate" exit="exit" transition={transition}>
+                <NameInput onSubmit={handleNameSubmit} />
+              </motion.div>
+            )}
 
-          {screen === 'level-select' && (
-            <motion.div key="level-select" className="absolute inset-0 pt-8"
-              variants={screenVariants} initial="initial" animate="animate" exit="exit" transition={transition}>
-              <LevelSelect
-                playerName={playerName}
-                progress={progress}
-                onSelectLevel={handleSelectLevel}
-                onLeaderboard={() => setScreen('leaderboard')}
-              />
-            </motion.div>
-          )}
+            {screen === 'level-select' && (
+              <motion.div key="level-select" className="absolute inset-0 pt-8"
+                variants={screenVariants} initial="initial" animate="animate" exit="exit" transition={transition}>
+                <LevelSelect
+                  playerName={playerName}
+                  progress={progress}
+                  onSelectLevel={handleSelectLevel}
+                  onLeaderboard={() => setScreen('leaderboard')}
+                />
+              </motion.div>
+            )}
 
-          {screen === 'leaderboard' && (
-            <motion.div key="leaderboard" className="absolute inset-0 pt-8"
-              variants={screenVariants} initial="initial" animate="animate" exit="exit" transition={transition}>
-              <Leaderboard
-                entries={leaderboard}
-                playerName={playerName}
-                onBack={() => setScreen('level-select')}
-              />
-            </motion.div>
-          )}
+            {screen === 'leaderboard' && (
+              <motion.div key="leaderboard" className="absolute inset-0 pt-8"
+                variants={screenVariants} initial="initial" animate="animate" exit="exit" transition={transition}>
+                <Leaderboard
+                  entries={leaderboard}
+                  playerName={playerName}
+                  onBack={() => setScreen('level-select')}
+                />
+              </motion.div>
+            )}
 
-          {screen === 'story' && (
-            <motion.div key="story" className="absolute inset-0 pt-8"
-              variants={screenVariants} initial="initial" animate="animate" exit="exit" transition={transition}>
-              {/* Background for story screen */}
-              <div className="w-full h-full flex flex-col items-center justify-center"
-                style={{ background: '#0A0E1A' }}>
-                <div className="absolute inset-0 opacity-[0.025]" style={{
-                  backgroundImage: 'linear-gradient(#43D9BB 1px, transparent 1px), linear-gradient(90deg, #43D9BB 1px, transparent 1px)',
-                  backgroundSize: '32px 32px'
-                }}/>
-                <div className="relative z-10 text-center px-8">
-                  <p className="text-[#3D4E6B] text-sm mb-2" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
-                    // loading level {currentLevel.id}...
-                  </p>
-                  <h2 className="text-white" style={{ fontSize: '1.4rem', fontWeight: 800 }}>
-                    {currentLevel.name}
-                  </h2>
+            {screen === 'story' && (
+              <motion.div key="story" className="absolute inset-0 pt-8"
+                variants={screenVariants} initial="initial" animate="animate" exit="exit" transition={transition}>
+                {/* Background for story screen */}
+                <div className="w-full h-full flex flex-col items-center justify-center"
+                  style={{ background: '#0A0E1A' }}>
+                  <div className="absolute inset-0 opacity-[0.025]" style={{
+                    backgroundImage: 'linear-gradient(#43D9BB 1px, transparent 1px), linear-gradient(90deg, #43D9BB 1px, transparent 1px)',
+                    backgroundSize: '32px 32px'
+                  }}/>
+                  <div className="relative z-10 text-center px-8">
+                    <p className="text-[#3D4E6B] text-sm mb-2" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
+                      // loading level {currentLevel.id}...
+                    </p>
+                    <h2 className="text-white" style={{ fontSize: '1.4rem', fontWeight: 800 }}>
+                      {currentLevel.name}
+                    </h2>
+                  </div>
                 </div>
-              </div>
-              <StoryModal
-                level={currentLevel}
-                onStart={handleStartGame}
-                onClose={() => setScreen('level-select')}
-              />
-            </motion.div>
-          )}
+                <StoryModal
+                  level={currentLevel}
+                  onStart={handleStartGame}
+                  onClose={() => setScreen('level-select')}
+                />
+              </motion.div>
+            )}
 
-          {screen === 'game' && (
-            <motion.div key={`game-${currentLevel.id}`} className="absolute inset-0 pt-8"
-              variants={screenVariants} initial="initial" animate="animate" exit="exit" transition={transition}>
-              <GameScreen
-                levelConfig={currentLevel}
-                playerName={playerName}
-                onComplete={handleGameComplete}
-                onBack={() => setScreen('level-select')}
-              />
-            </motion.div>
-          )}
+            {screen === 'game' && (
+              <motion.div key={`game-${currentLevel.id}`} className="absolute inset-0 pt-8"
+                variants={screenVariants} initial="initial" animate="animate" exit="exit" transition={transition}>
+                <GameScreen
+                  levelConfig={currentLevel}
+                  playerName={playerName}
+                  onComplete={handleGameComplete}
+                  onBack={() => setScreen('level-select')}
+                />
+              </motion.div>
+            )}
 
-          {screen === 'level-complete' && (
-            <motion.div key="level-complete" className="absolute inset-0 pt-8"
-              variants={screenVariants} initial="initial" animate="animate" exit="exit" transition={transition}>
-              <LevelComplete
-                level={currentLevel}
-                result={lastResult}
-                prevBestStars={progress[currentLevel.id] || 0}
-                onNext={handleNextLevel}
-                onRetry={handleRetry}
-                onLevelSelect={() => setScreen('level-select')}
-              />
-            </motion.div>
-          )}
-        </AnimatePresence>
+            {screen === 'level-complete' && (
+              <motion.div key="level-complete" className="absolute inset-0 pt-8"
+                variants={screenVariants} initial="initial" animate="animate" exit="exit" transition={transition}>
+                <LevelComplete
+                  level={currentLevel}
+                  result={lastResult}
+                  prevBestStars={progress[currentLevel.id] || 0}
+                  onNext={handleNextLevel}
+                  onRetry={handleRetry}
+                  onLevelSelect={() => setScreen('level-select')}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       </div>
-
 
     </div>
   );
