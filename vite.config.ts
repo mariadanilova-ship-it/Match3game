@@ -1,22 +1,8 @@
- import { defineConfig } from "vite";
-import path from "path";
-import tailwindcss from "@tailwindcss/vite";
+import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+import tailwindcss from "@tailwindcss/vite";
 
 export default defineConfig({
-  base: "/Match3game/",
-
-  plugins: [
-    // React + Tailwind нужны для Make
-    react(),
-    tailwindcss(),
-  ],
-
-  resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "./src"),
-    },
-  },
-
-  assetsInclude: ["**/*.svg", "**/*.csv"],
+  plugins: [react(), tailwindcss()],
+  base: "/",
 });
