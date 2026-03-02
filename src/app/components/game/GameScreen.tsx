@@ -9,8 +9,8 @@ import {
 } from './gameLogic';
 import { BugIcon } from './BugIcon';
 
-const TILE_SIZE = 41;
-const GAP = 3;
+const TILE_SIZE = 43;
+const GAP = 2;
 
 const TILE_STYLES = [
   { bg: '#071A16', border: '#43D9BB', glow: 'rgba(67,217,187,0.35)' },
@@ -511,12 +511,12 @@ export function GameScreen({ levelConfig, playerName, onComplete, onBack }: Game
           </AnimatePresence>
 
           <div
-            className="rounded-2xl p-2"
+            className="rounded-2xl overflow-hidden"
             style={{
               background: '#080C18',
               border: '1.5px solid #1A2540',
               boxShadow: '0 0 40px rgba(0,0,0,0.4)',
-              width: gridWidth + 16,
+              width: gridWidth,
             }}
           >
             <div
