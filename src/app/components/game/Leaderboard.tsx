@@ -8,17 +8,6 @@ interface LeaderboardProps {
   onBack: () => void;
 }
 
-const DEMO_ENTRIES: LeaderboardEntry[] = [
-  { name: 'DevOps_Dan',    score: 284500, stars: 87, level: 30, date: '2026-02-28' },
-  { name: 'QA_Nightmare',  score: 231200, stars: 79, level: 29, date: '2026-02-27' },
-  { name: 'NullPanic',     score: 187400, stars: 71, level: 27, date: '2026-02-26' },
-  { name: 'git_ghost',     score: 142800, stars: 63, level: 24, date: '2026-02-25' },
-  { name: 'CrashLord',     score: 118600, stars: 55, level: 21, date: '2026-02-24' },
-  { name: 'P0_Destroyer',  score: 98400,  stars: 48, level: 18, date: '2026-02-23' },
-  { name: 'hotfixQueen',   score: 74200,  stars: 39, level: 15, date: '2026-02-22' },
-  { name: 'TechDebt_Hero', score: 52100,  stars: 28, level: 11, date: '2026-02-21' },
-];
-
 function RankBadge({ rank }: { rank: number }) {
   if (rank === 1) return (
     <div className="w-8 h-8 rounded-xl flex items-center justify-center"
@@ -49,8 +38,7 @@ function RankBadge({ rank }: { rank: number }) {
 }
 
 export function Leaderboard({ entries, playerName, onBack }: LeaderboardProps) {
-  // Merge real entries with demo ones, sort by score
-  const allEntries = [...entries, ...DEMO_ENTRIES]
+  const allEntries = [...entries]
     .sort((a, b) => b.score - a.score)
     .slice(0, 20)
     .map((e, i) => ({ ...e, rank: i + 1 }));
@@ -127,67 +115,79 @@ export function Leaderboard({ entries, playerName, onBack }: LeaderboardProps) {
           </div>
         </div>
 
-        <div className="flex flex-col gap-2">
-          {allEntries.map((entry, i) => {
-            const isPlayer = entry.name === playerName;
-            return (
-              <motion.div
-                key={`${entry.name}-${i}`}
-                initial={{ opacity: 0, x: -16 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.03 }}
-                className="flex items-center gap-3 px-3 py-3 rounded-2xl"
-                style={{
-                  background: isPlayer
-                    ? 'rgba(67,217,187,0.06)'
-                    : entry.rank <= 3
-                    ? '#0F1629'
-                    : '#0A0D17',
-                  border: `1.5px solid ${
-                    isPlayer ? 'rgba(67,217,187,0.25)' : entry.rank <= 3 ? '#1E2D4E' : '#111826'
-                  }`,
-                }}
-              >
-                <RankBadge rank={entry.rank} />
+        {allEntries.length === 0 ? (
+          <div className="mt-8 rounded-2xl px-4 py-6 text-center"
+            style={{ background: '#0F1629', border: '1.5px solid #1E2D4E' }}>
+            <p className="text-[#E8F0FE]" style={{ fontSize: '0.9rem', fontWeight: 600 }}>
+              No records yet
+            </p>
+            <p className="text-[#6B7FA3] text-xs mt-1">
+              Finish a level to add your first score.
+            </p>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {allEntries.map((entry, i) => {
+              const isPlayer = entry.name === playerName;
+              return (
+                <motion.div
+                  key={`${entry.name}-${i}`}
+                  initial={{ opacity: 0, x: -16 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.03 }}
+                  className="flex items-center gap-3 px-3 py-3 rounded-2xl"
+                  style={{
+                    background: isPlayer
+                      ? 'rgba(67,217,187,0.06)'
+                      : entry.rank <= 3
+                      ? '#0F1629'
+                      : '#0A0D17',
+                    border: `1.5px solid ${
+                      isPlayer ? 'rgba(67,217,187,0.25)' : entry.rank <= 3 ? '#1E2D4E' : '#111826'
+                    }`,
+                  }}
+                >
+                  <RankBadge rank={entry.rank} />
 
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-[#E8F0FE] truncate"
-                      style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '0.8rem', fontWeight: 600 }}>
-                      {entry.name}
-                    </span>
-                    {isPlayer && (
-                      <span className="text-[#43D9BB] flex-shrink-0"
-                        style={{ fontSize: '0.6rem', fontWeight: 700 }}>YOU</span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[#6B7FA3] text-xs">
-                      Lv.{entry.level}
-                    </span>
-                    <div className="flex gap-0.5">
-                      {Array(Math.min(3, Math.round(entry.stars / Math.max(entry.level, 1)))).fill(0).map((_, si) => (
-                        <Star key={si} size={7} fill="#FFD84D" color="#FFD84D" />
-                      ))}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[#E8F0FE] truncate"
+                        style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '0.8rem', fontWeight: 600 }}>
+                        {entry.name}
+                      </span>
+                      {isPlayer && (
+                        <span className="text-[#43D9BB] flex-shrink-0"
+                          style={{ fontSize: '0.6rem', fontWeight: 700 }}>YOU</span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[#6B7FA3] text-xs">
+                        Lv.{entry.level}
+                      </span>
+                      <div className="flex gap-0.5">
+                        {Array(Math.min(3, Math.round(entry.stars / Math.max(entry.level, 1)))).fill(0).map((_, si) => (
+                          <Star key={si} size={7} fill="#FFD84D" color="#FFD84D" />
+                        ))}
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="text-right w-16">
-                  <span style={{ fontFamily: 'JetBrains Mono, monospace', color: entry.rank <= 3 ? '#FFD84D' : '#B8C8E8', fontSize: '0.8rem', fontWeight: 700 }}>
-                    {entry.score.toLocaleString()}
-                  </span>
-                </div>
+                  <div className="text-right w-16">
+                    <span style={{ fontFamily: 'JetBrains Mono, monospace', color: entry.rank <= 3 ? '#FFD84D' : '#B8C8E8', fontSize: '0.8rem', fontWeight: 700 }}>
+                      {entry.score.toLocaleString()}
+                    </span>
+                  </div>
 
-                <div className="w-8 text-right">
-                  <span style={{ fontFamily: 'JetBrains Mono, monospace', color: '#FFD84D', fontSize: '0.75rem', fontWeight: 600 }}>
-                    {entry.stars}
-                  </span>
-                </div>
-              </motion.div>
-            );
-          })}
-        </div>
+                  <div className="w-8 text-right">
+                    <span style={{ fontFamily: 'JetBrains Mono, monospace', color: '#FFD84D', fontSize: '0.75rem', fontWeight: 600 }}>
+                      {entry.stars}
+                    </span>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );
