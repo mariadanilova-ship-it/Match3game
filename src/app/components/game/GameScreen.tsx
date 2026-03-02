@@ -5,12 +5,12 @@ import type { LevelConfig, LevelResult, Cell, Position, PowerUpType } from './ty
 import { BUG_TYPES, POWER_UPS, getInitialPowerUpCharges } from './gameData';
 import {
   createInitialBoard, findMatches, applyGravity, fillBoard,
-  hasValidMoves, countBugTypes, removeMostCommonBug, generateId,
+  hasValidMoves, countBugTypes, removeMostCommonBug, generateId, BOARD_COLS,
 } from './gameLogic';
 import { BugIcon } from './BugIcon';
 
-const TILE_SIZE = 43;
-const GAP = 2;
+const TILE_SIZE = 56;
+const GAP = 4;
 
 const TILE_STYLES = [
   { bg: '#071A16', border: '#43D9BB', glow: 'rgba(67,217,187,0.35)' },
@@ -411,7 +411,7 @@ export function GameScreen({ levelConfig, playerName, onComplete, onBack }: Game
     : score >= levelConfig.starThresholds[1] ? 2
     : score >= levelConfig.starThresholds[0] ? 1 : 0;
 
-  const gridWidth = 8 * TILE_SIZE + 7 * GAP;
+  const gridWidth = BOARD_COLS * TILE_SIZE + (BOARD_COLS - 1) * GAP;
 
   return (
     <div className="flex flex-col h-full bg-[#0A0E1A] relative overflow-hidden"
@@ -522,7 +522,7 @@ export function GameScreen({ levelConfig, playerName, onComplete, onBack }: Game
             <div
               style={{
                 display: 'grid',
-                gridTemplateColumns: `repeat(8, ${TILE_SIZE}px)`,
+                gridTemplateColumns: `repeat(${BOARD_COLS}, ${TILE_SIZE}px)`,
                 gap: `${GAP}px`,
               }}
             >
@@ -545,7 +545,7 @@ export function GameScreen({ levelConfig, playerName, onComplete, onBack }: Game
                       transition={
                         isMatched
                           ? { duration: 0.35, times: [0, 0.3, 1] }
-                          : { type: 'spring', stiffness: 400, damping: 25, delay: (ri * 8 + ci) * 0.004 }
+                          : { type: 'spring', stiffness: 400, damping: 25, delay: (ri * BOARD_COLS + ci) * 0.004 }
                       }
                       whileTap={!isProcessing ? { scale: 0.88 } : {}}
                       className="flex items-center justify-center rounded-xl relative overflow-hidden"
