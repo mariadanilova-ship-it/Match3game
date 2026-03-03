@@ -9,7 +9,6 @@ import { StoryModal } from './components/game/StoryModal';
 import { GameScreen } from './components/game/GameScreen';
 import { LevelComplete } from './components/game/LevelComplete';
 import { Leaderboard } from './components/game/Leaderboard';
-import backgroundMusic from '../assets/background-music.mp3';
 import menuClickSound from '../assets/menu-click.mp3';
 
 // Persistence
@@ -50,7 +49,6 @@ export default function App() {
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>(loadLeaderboard);
   const [currentLevel, setCurrentLevel] = useState<LevelConfig>(LEVELS[0]);
   const [lastResult, setLastResult] = useState<LevelResult>({ score: 0, stars: 0 });
-  const audioRef = useRef<HTMLAudioElement | null>(null);
   const menuClickRef = useRef<HTMLAudioElement | null>(null);
 
   const totalStars = Object.values(progress).reduce((a, b) => a + b, 0);
@@ -152,30 +150,6 @@ export default function App() {
     if (playerName) setScreen('level-select');
     else setScreen('name-input');
   }, [playerName, playMenuClick]);
-
-  useEffect(() => {
-    const audio = new Audio(backgroundMusic);
-    audio.loop = true;
-    audio.volume = 0.22;
-    audio.preload = 'auto';
-    audioRef.current = audio;
-
-    const startPlayback = () => {
-      audio.play().catch(() => {});
-    };
-
-    startPlayback();
-    window.addEventListener('pointerdown', startPlayback);
-    window.addEventListener('keydown', startPlayback);
-
-    return () => {
-      window.removeEventListener('pointerdown', startPlayback);
-      window.removeEventListener('keydown', startPlayback);
-      audio.pause();
-      audio.currentTime = 0;
-      audioRef.current = null;
-    };
-  }, []);
 
   useEffect(() => {
     const clickAudio = new Audio(menuClickSound);

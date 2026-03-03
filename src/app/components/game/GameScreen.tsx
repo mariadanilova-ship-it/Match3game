@@ -5,9 +5,10 @@ import type { LevelConfig, LevelResult, Cell, Position, PowerUpType } from './ty
 import { BUG_TYPES, POWER_UPS, getInitialPowerUpCharges } from './gameData';
 import {
   createInitialBoard, findMatches, applyGravity, fillBoard,
-  hasValidMoves, countBugTypes, removeMostCommonBug, generateId, BOARD_COLS, BOARD_ROWS,
+  hasValidMoves, countBugTypes, removeMostCommonBug, generateId, BOARD_COLS,
 } from './gameLogic';
 import { BugIcon } from './BugIcon';
+import slotDisappearSound from '../../../assets/slot-disappear.mp3';
 
 const TILE_SIZE = 56;
 const GAP = 4;
@@ -19,36 +20,6 @@ const TILE_STYLES = [
   { bg: '#1A1507', border: '#FFD84D', glow: 'rgba(255,216,77,0.48)' },
   { bg: '#0F071A', border: '#A96CFF', glow: 'rgba(169,108,255,0.48)' },
 ];
-
-function createFrozenSlots(count: number): Set<string> {
-  const slots = new Set<string>();
-  const maxSlots = Math.min(count, BOARD_ROWS * BOARD_COLS);
-  while (slots.size < maxSlots) {
-    const row = Math.floor(Math.random() * BOARD_ROWS);
-    const col = Math.floor(Math.random() * BOARD_COLS);
-    slots.add(`${row},${col}`);
-  }
-  return slots;
-}
-
-function IceOverlay({ id }: { id: string }) {
-  const gradientId = `ice-grad-${id}`;
-  return (
-    <svg className="absolute inset-0 pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none">
-      <defs>
-        <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#dff5ff" stopOpacity="0.66" />
-          <stop offset="50%" stopColor="#8fd7ff" stopOpacity="0.38" />
-          <stop offset="100%" stopColor="#4ea8db" stopOpacity="0.56" />
-        </linearGradient>
-      </defs>
-      <rect x="3" y="3" width="94" height="94" rx="20" fill={`url(#${gradientId})`} stroke="#c4edff" strokeOpacity="0.7" strokeWidth="2" />
-      <path d="M18 24 L42 34 L66 24 L84 38" stroke="#f0fbff" strokeOpacity="0.55" strokeWidth="2" fill="none" />
-      <path d="M16 66 L34 54 L52 68 L76 58 L86 72" stroke="#bfeeff" strokeOpacity="0.55" strokeWidth="2" fill="none" />
-      <path d="M28 14 L24 34 M52 30 L62 46 M70 14 L58 30 M80 50 L64 64 M34 70 L22 84" stroke="#f5fdff" strokeOpacity="0.42" strokeWidth="1.7" fill="none" />
-    </svg>
-  );
-}
 
 // Circular Timer
 function CircularTimer({ timeLeft, totalTime }: { timeLeft: number; totalTime: number }) {
@@ -233,8 +204,6 @@ interface GameScreenProps {
 
 export function GameScreen({ levelConfig, playerName, onComplete, onBack }: GameScreenProps) {
   const [board, setBoard] = useState<Cell[][]>(() => createInitialBoard(5));
-  const frozenSlotCount = levelConfig.frozenSlots || 0;
-  const [frozenSlots, setFrozenSlots] = useState<Set<string>>(() => createFrozenSlots(frozenSlotCount));
   const [selected, setSelected] = useState<Position | null>(null);
   const [timeLeft, setTimeLeft] = useState(levelConfig.timeLimit);
   const [score, setScore] = useState(0);
@@ -250,6 +219,27 @@ export function GameScreen({ levelConfig, playerName, onComplete, onBack }: Game
   const [powerUpFeedback, setPowerUpFeedback] = useState<string | null>(null);
   const firewallRef = useRef(false);
   const comboRef = useRef(0);
+  const disappearAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  const playDisappearSound = useCallback(() => {
+    const audio = disappearAudioRef.current;
+    if (!audio) return;
+    audio.currentTime = 0;
+    audio.play().catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    const audio = new Audio(slotDisappearSound);
+    audio.preload = 'auto';
+    audio.volume = 0.55;
+    disappearAudioRef.current = audio;
+
+    return () => {
+      audio.pause();
+      audio.currentTime = 0;
+      disappearAudioRef.current = null;
+    };
+  }, []);
 
   // Timer
   useEffect(() => {
@@ -286,17 +276,15 @@ export function GameScreen({ levelConfig, playerName, onComplete, onBack }: Game
     }
   }, [phase]);
 
-  const processMatches = useCallback(async (currentBoard: Cell[][], currentCombo: number, currentFrozenSlots: Set<string>) => {
+  const processMatches = useCallback(async (currentBoard: Cell[][], currentCombo: number) => {
     const matches = findMatches(currentBoard);
     if (matches.length === 0) {
       comboRef.current = 0;
       setIsProcessing(false);
       // Check valid moves
-      if (!hasValidMoves(currentBoard, currentFrozenSlots)) {
+      if (!hasValidMoves(currentBoard)) {
         const newBoard = createInitialBoard(5);
-        const newFrozenSlots = createFrozenSlots(frozenSlotCount);
         setBoard(newBoard);
-        setFrozenSlots(newFrozenSlots);
         setPowerUpFeedback('No moves! Board reshuffled');
         setTimeout(() => setPowerUpFeedback(null), 2000);
       }
@@ -306,6 +294,7 @@ export function GameScreen({ levelConfig, playerName, onComplete, onBack }: Game
     // Mark matches
     const matchSet = new Set(matches.map(p => `${p.row},${p.col}`));
     setMatchedCells(matchSet);
+    playDisappearSound();
 
     // Count bugs
     const bugCounts = countBugTypes(matches, currentBoard);
@@ -332,12 +321,6 @@ export function GameScreen({ levelConfig, playerName, onComplete, onBack }: Game
       return updated;
     });
 
-    const nextFrozenSlots = new Set(currentFrozenSlots);
-    matches.forEach(({ row, col }) => {
-      nextFrozenSlots.delete(`${row},${col}`);
-    });
-    setFrozenSlots(nextFrozenSlots);
-
     // Animate removal then fill
     await new Promise(res => setTimeout(res, 380));
 
@@ -355,18 +338,11 @@ export function GameScreen({ levelConfig, playerName, onComplete, onBack }: Game
 
     // Check for cascade
     await new Promise(res => setTimeout(res, 200));
-    processMatches(newBoard, currentCombo + 1, nextFrozenSlots);
-  }, [frozenSlotCount]);
+    processMatches(newBoard, currentCombo + 1);
+  }, [playDisappearSound]);
 
   const handleTileClick = useCallback((row: number, col: number) => {
     if (isProcessing || phase !== 'playing') return;
-    const targetKey = `${row},${col}`;
-
-    if (frozenSlots.has(targetKey)) {
-      setPowerUpFeedback('🧊 Frozen slot: match it to break the ice');
-      setTimeout(() => setPowerUpFeedback(null), 1300);
-      return;
-    }
 
     if (!selected) {
       setSelected({ row, col });
@@ -394,7 +370,7 @@ export function GameScreen({ levelConfig, playerName, onComplete, onBack }: Game
         setBoard(newBoard);
         setSelected(null);
         comboRef.current = 1;
-        setTimeout(() => processMatches(newBoard, 1, frozenSlots), 200);
+        setTimeout(() => processMatches(newBoard, 1), 200);
       } else {
         // Shake — no valid swap
         setSelected(null);
@@ -403,7 +379,7 @@ export function GameScreen({ levelConfig, playerName, onComplete, onBack }: Game
       // Select new tile instead
       setSelected({ row, col });
     }
-  }, [isProcessing, phase, selected, board, processMatches, frozenSlots]);
+  }, [isProcessing, phase, selected, board, processMatches]);
 
   const handlePowerUp = useCallback((type: PowerUpType) => {
     if ((powerUpCharges[type] || 0) <= 0) return;
@@ -416,7 +392,7 @@ export function GameScreen({ levelConfig, playerName, onComplete, onBack }: Game
     }
 
     if (type === 'hotfix') {
-      const { newBoard, bugType, count, positions } = removeMostCommonBug(board);
+      const { newBoard, bugType, count } = removeMostCommonBug(board);
       const bug = BUG_TYPES[bugType];
       const bugCounts: Record<number, number> = { [bugType]: count };
       setObjectives(prev => {
@@ -426,11 +402,7 @@ export function GameScreen({ levelConfig, playerName, onComplete, onBack }: Game
         });
         return updated;
       });
-      setFrozenSlots(prev => {
-        const next = new Set(prev);
-        positions.forEach(({ row, col }) => next.delete(`${row},${col}`));
-        return next;
-      });
+      playDisappearSound();
       setScore(s => s + count * 8);
       const gravity = applyGravity(newBoard);
       const filled = fillBoard(gravity, 5);
@@ -442,7 +414,6 @@ export function GameScreen({ levelConfig, playerName, onComplete, onBack }: Game
     if (type === 'refactor') {
       const newBoard = createInitialBoard(5);
       setBoard(newBoard);
-      setFrozenSlots(createFrozenSlots(frozenSlotCount));
       setSelected(null);
       setPowerUpFeedback('♻️ Board refactored!');
       setTimeout(() => setPowerUpFeedback(null), 1800);
@@ -458,7 +429,7 @@ export function GameScreen({ levelConfig, playerName, onComplete, onBack }: Game
         setPowerUpFeedback(null);
       }, 8000);
     }
-  }, [powerUpCharges, board, levelConfig.timeLimit, frozenSlotCount]);
+  }, [powerUpCharges, board, levelConfig.timeLimit, playDisappearSound]);
 
   const stars = score >= levelConfig.starThresholds[2] ? 3
     : score >= levelConfig.starThresholds[1] ? 2
@@ -584,7 +555,6 @@ export function GameScreen({ levelConfig, playerName, onComplete, onBack }: Game
                 row.map((cell, ci) => {
                   const isSelected = selected?.row === ri && selected?.col === ci;
                   const isMatched = matchedCells.has(`${ri},${ci}`);
-                  const isFrozen = frozenSlots.has(`${ri},${ci}`);
                   const ts = TILE_STYLES[cell.type] || TILE_STYLES[0];
 
                   return (
@@ -624,7 +594,6 @@ export function GameScreen({ levelConfig, playerName, onComplete, onBack }: Game
                           transition={{ duration: 0.8, repeat: Infinity }}
                         />
                       )}
-                      {isFrozen && <IceOverlay id={cell.id} />}
                       <BugIcon type={cell.type} size={TILE_SIZE - 8} />
                     </motion.button>
                   );

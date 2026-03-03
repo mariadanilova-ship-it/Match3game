@@ -106,18 +106,15 @@ export function fillBoard(board: Cell[][], bugTypeCount: number): Cell[][] {
   return newBoard;
 }
 
-export function hasValidMoves(board: Cell[][], frozenSlots?: Set<string>): boolean {
+export function hasValidMoves(board: Cell[][]): boolean {
   for (let row = 0; row < BOARD_ROWS; row++) {
     for (let col = 0; col < BOARD_COLS; col++) {
-      const key = `${row},${col}`;
-      if (frozenSlots?.has(key)) continue;
-
-      if (col < BOARD_COLS - 1 && !frozenSlots?.has(`${row},${col + 1}`)) {
+      if (col < BOARD_COLS - 1) {
         const tb = board.map((r) => [...r]);
         [tb[row][col], tb[row][col + 1]] = [tb[row][col + 1], tb[row][col]];
         if (findMatches(tb).length > 0) return true;
       }
-      if (row < BOARD_ROWS - 1 && !frozenSlots?.has(`${row + 1},${col}`)) {
+      if (row < BOARD_ROWS - 1) {
         const tb = board.map((r) => [...r]);
         [tb[row][col], tb[row + 1][col]] = [tb[row + 1][col], tb[row][col]];
         if (findMatches(tb).length > 0) return true;
@@ -144,7 +141,7 @@ export function clearRow(board: Cell[][], rowIndex: number): Cell[][] {
   return newBoard;
 }
 
-export function removeMostCommonBug(board: Cell[][]): { newBoard: Cell[][]; bugType: number; count: number; positions: Position[] } {
+export function removeMostCommonBug(board: Cell[][]): { newBoard: Cell[][]; bugType: number; count: number } {
   const counts: Record<number, number> = {};
   for (let row = 0; row < BOARD_ROWS; row++) {
     for (let col = 0; col < BOARD_COLS; col++) {
@@ -155,15 +152,13 @@ export function removeMostCommonBug(board: Cell[][]): { newBoard: Cell[][]; bugT
   const bugType = parseInt(Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0]);
   const newBoard = board.map((r) => [...r]);
   let count = 0;
-  const positions: Position[] = [];
   for (let row = 0; row < BOARD_ROWS; row++) {
     for (let col = 0; col < BOARD_COLS; col++) {
       if (newBoard[row][col].type === bugType) {
         newBoard[row][col] = { type: -1, id: generateId() };
         count++;
-        positions.push({ row, col });
       }
     }
   }
-  return { newBoard, bugType, count, positions };
+  return { newBoard, bugType, count };
 }

@@ -240,16 +240,7 @@ function getReducedTime(timeLimit: number, levelId: number) {
   return Math.max(18, timeLimit - reduction);
 }
 
-function getFrozenSlotCount(levelId: number) {
-  if (levelId < 3) return 0;
-  if (levelId < 8) return 2;
-  if (levelId < 15) return 3;
-  if (levelId < 22) return 4;
-  return 5;
-}
-
 export const LEVELS: LevelConfig[] = BASE_LEVELS.map((level) => ({
   ...level,
   timeLimit: getReducedTime(level.timeLimit, level.id),
-  frozenSlots: getFrozenSlotCount(level.id),
 }));
