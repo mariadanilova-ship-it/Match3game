@@ -13,11 +13,11 @@ const TILE_SIZE = 56;
 const GAP = 4;
 
 const TILE_STYLES = [
-  { bg: '#071A16', border: '#43D9BB', glow: 'rgba(67,217,187,0.35)' },
-  { bg: '#07111E', border: '#4DA3FF', glow: 'rgba(77,163,255,0.35)' },
+  { bg: '#071A16', border: '#43D9BB', glow: 'rgba(67,217,187,0.48)' },
+  { bg: '#07111E', border: '#4DA3FF', glow: 'rgba(77,163,255,0.48)' },
   { bg: '#1A0707', border: '#FF4D4F', glow: 'rgba(255,77,79,0.5)' },
-  { bg: '#1A1507', border: '#FFD84D', glow: 'rgba(255,216,77,0.35)' },
-  { bg: '#0F071A', border: '#A96CFF', glow: 'rgba(169,108,255,0.35)' },
+  { bg: '#1A1507', border: '#FFD84D', glow: 'rgba(255,216,77,0.48)' },
+  { bg: '#0F071A', border: '#A96CFF', glow: 'rgba(169,108,255,0.48)' },
 ];
 
 // Circular Timer
@@ -556,10 +556,8 @@ export function GameScreen({ levelConfig, playerName, onComplete, onBack }: Game
                         background: ts.bg,
                         border: `1.5px solid ${isSelected ? ts.border : ts.border + '44'}`,
                         boxShadow: isSelected
-                          ? `0 0 14px ${ts.glow}, inset 0 0 8px ${ts.glow}`
-                          : cell.type === 2
-                          ? `0 0 8px ${ts.glow}`
-                          : 'none',
+                          ? `0 0 16px ${ts.glow}, inset 0 0 10px ${ts.glow}`
+                          : `0 0 10px ${ts.glow}`,
                         cursor: isProcessing ? 'default' : 'pointer',
                       }}
                     >

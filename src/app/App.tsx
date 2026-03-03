@@ -30,6 +30,17 @@ function savePlayerName(name: string) {
   try { localStorage.setItem('bhPlayerName', name); } catch {}
 }
 
+function normalizePlayerName(name: string) {
+  return name.trim().toLowerCase();
+}
+
+function pickBetterEntry(a: LeaderboardEntry, b: LeaderboardEntry): LeaderboardEntry {
+  if (b.score !== a.score) return b.score > a.score ? b : a;
+  if (b.stars !== a.stars) return b.stars > a.stars ? b : a;
+  if (b.level !== a.level) return b.level > a.level ? b : a;
+  return b;
+}
+
 export default function App() {
   const [screen, setScreen] = useState<AppScreen>('splash');
   const [playerName, setPlayerName] = useState(() => loadPlayerName());
@@ -69,16 +80,25 @@ export default function App() {
     // Update leaderboard
     if (result.stars > 0) {
       setLeaderboard(prev => {
-        const newEntry: LeaderboardEntry = {
+        const candidateEntry: LeaderboardEntry = {
           name: playerName,
           score: result.score,
           stars: totalStars + result.stars,
           level: currentLevel.id,
           date: new Date().toISOString().slice(0, 10),
         };
-        const updated = [newEntry, ...prev]
+
+        const byName = new Map<string, LeaderboardEntry>();
+        [...prev, candidateEntry].forEach((entry) => {
+          const key = normalizePlayerName(entry.name);
+          const existing = byName.get(key);
+          byName.set(key, existing ? pickBetterEntry(existing, entry) : entry);
+        });
+
+        const updated = Array.from(byName.values())
           .sort((a, b) => b.score - a.score)
           .slice(0, 50);
+
         saveLeaderboard(updated);
         return updated;
       });
