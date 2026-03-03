@@ -515,6 +515,7 @@ export function GameScreen({ levelConfig, playerName, onComplete, onBack }: Game
             style={{
               background: '#080C18',
               border: '1.5px solid #1A2540',
+              boxSizing: 'content-box',
               boxShadow: '0 0 40px rgba(0,0,0,0.4)',
               width: gridWidth,
             }}
