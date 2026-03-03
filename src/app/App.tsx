@@ -10,6 +10,7 @@ import { GameScreen } from './components/game/GameScreen';
 import { LevelComplete } from './components/game/LevelComplete';
 import { Leaderboard } from './components/game/Leaderboard';
 import backgroundMusic from '../assets/background-music.mp3';
+import menuClickSound from '../assets/menu-click.mp3';
 
 // Persistence
 function loadProgress(): Record<number, number> {
@@ -50,23 +51,34 @@ export default function App() {
   const [currentLevel, setCurrentLevel] = useState<LevelConfig>(LEVELS[0]);
   const [lastResult, setLastResult] = useState<LevelResult>({ score: 0, stars: 0 });
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const menuClickRef = useRef<HTMLAudioElement | null>(null);
 
   const totalStars = Object.values(progress).reduce((a, b) => a + b, 0);
 
+  const playMenuClick = useCallback(() => {
+    const audio = menuClickRef.current;
+    if (!audio) return;
+    audio.currentTime = 0;
+    audio.play().catch(() => {});
+  }, []);
+
   const handleNameSubmit = useCallback((name: string) => {
+    playMenuClick();
     setPlayerName(name);
     savePlayerName(name);
     setScreen('level-select');
-  }, []);
+  }, [playMenuClick]);
 
   const handleSelectLevel = useCallback((level: LevelConfig) => {
+    playMenuClick();
     setCurrentLevel(level);
     setScreen('story');
-  }, []);
+  }, [playMenuClick]);
 
   const handleStartGame = useCallback(() => {
+    playMenuClick();
     setScreen('game');
-  }, []);
+  }, [playMenuClick]);
 
   const handleGameComplete = useCallback((result: LevelResult) => {
     setLastResult(result);
@@ -110,6 +122,7 @@ export default function App() {
   }, [currentLevel, playerName, totalStars]);
 
   const handleNextLevel = useCallback(() => {
+    playMenuClick();
     const nextId = currentLevel.id + 1;
     if (nextId <= 30) {
       const next = LEVELS[nextId - 1];
@@ -118,11 +131,12 @@ export default function App() {
     } else {
       setScreen('level-select');
     }
-  }, [currentLevel]);
+  }, [currentLevel, playMenuClick]);
 
   const handleRetry = useCallback(() => {
+    playMenuClick();
     setScreen('story');
-  }, []);
+  }, [playMenuClick]);
 
   const screenVariants = {
     initial: { opacity: 0, scale: 0.97, y: 10 },
@@ -134,9 +148,10 @@ export default function App() {
 
   // Auto-forward splash → name input or level select
   const handleSplashContinue = useCallback(() => {
+    playMenuClick();
     if (playerName) setScreen('level-select');
     else setScreen('name-input');
-  }, [playerName]);
+  }, [playerName, playMenuClick]);
 
   useEffect(() => {
     const audio = new Audio(backgroundMusic);
@@ -159,6 +174,19 @@ export default function App() {
       audio.pause();
       audio.currentTime = 0;
       audioRef.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    const clickAudio = new Audio(menuClickSound);
+    clickAudio.preload = 'auto';
+    clickAudio.volume = 0.55;
+    menuClickRef.current = clickAudio;
+
+    return () => {
+      clickAudio.pause();
+      clickAudio.currentTime = 0;
+      menuClickRef.current = null;
     };
   }, []);
 
@@ -186,7 +214,10 @@ export default function App() {
               playerName={playerName}
               progress={progress}
               onSelectLevel={handleSelectLevel}
-              onLeaderboard={() => setScreen('leaderboard')}
+              onLeaderboard={() => {
+                playMenuClick();
+                setScreen('leaderboard');
+              }}
             />
           </motion.div>
         )}
@@ -197,7 +228,10 @@ export default function App() {
             <Leaderboard
               entries={leaderboard}
               playerName={playerName}
-              onBack={() => setScreen('level-select')}
+              onBack={() => {
+                playMenuClick();
+                setScreen('level-select');
+              }}
             />
           </motion.div>
         )}
@@ -224,7 +258,10 @@ export default function App() {
             <StoryModal
               level={currentLevel}
               onStart={handleStartGame}
-              onClose={() => setScreen('level-select')}
+              onClose={() => {
+                playMenuClick();
+                setScreen('level-select');
+              }}
             />
           </motion.div>
         )}
@@ -250,7 +287,10 @@ export default function App() {
               prevBestStars={progress[currentLevel.id] || 0}
               onNext={handleNextLevel}
               onRetry={handleRetry}
-              onLevelSelect={() => setScreen('level-select')}
+              onLevelSelect={() => {
+                playMenuClick();
+                setScreen('level-select');
+              }}
             />
           </motion.div>
         )}
