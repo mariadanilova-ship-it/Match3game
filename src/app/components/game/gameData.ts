@@ -22,7 +22,7 @@ export function getInitialPowerUpCharges(levelId: number): Record<string, number
   return                    { freeze: 3, hotfix: 2, refactor: 2, firewall: 2 };
 }
 
-export const LEVELS: LevelConfig[] = [
+const BASE_LEVELS: LevelConfig[] = [
   {
     id: 1, name: 'First Deploy', timeLimit: 90,
     objectives: [{ bugType: 0, count: 10 }],
@@ -234,3 +234,22 @@ export const LEVELS: LevelConfig[] = [
       text: '"Congratulations. 30 levels of pure release panic. You survived. The bugs never truly die — they just ship to prod."' },
   },
 ];
+
+function getReducedTime(timeLimit: number, levelId: number) {
+  const reduction = levelId < 3 ? 10 : 15;
+  return Math.max(18, timeLimit - reduction);
+}
+
+function getFrozenSlotCount(levelId: number) {
+  if (levelId < 3) return 0;
+  if (levelId < 8) return 2;
+  if (levelId < 15) return 3;
+  if (levelId < 22) return 4;
+  return 5;
+}
+
+export const LEVELS: LevelConfig[] = BASE_LEVELS.map((level) => ({
+  ...level,
+  timeLimit: getReducedTime(level.timeLimit, level.id),
+  frozenSlots: getFrozenSlotCount(level.id),
+}));

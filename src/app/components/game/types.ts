@@ -17,6 +17,7 @@ export interface LevelConfig {
   id: number;
   name: string;
   timeLimit: number;
+  frozenSlots?: number;
   objectives: LevelObjective[];
   starThresholds: [number, number, number];
   story: { title: string; text: string; character: string };
