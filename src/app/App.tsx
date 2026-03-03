@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import type { AppScreen, LevelConfig, LevelResult, LeaderboardEntry } from './components/game/types';
 import { LEVELS } from './components/game/gameData';
@@ -9,6 +9,7 @@ import { StoryModal } from './components/game/StoryModal';
 import { GameScreen } from './components/game/GameScreen';
 import { LevelComplete } from './components/game/LevelComplete';
 import { Leaderboard } from './components/game/Leaderboard';
+import backgroundMusic from '../assets/background-music.mp3';
 
 // Persistence
 function loadProgress(): Record<number, number> {
@@ -48,6 +49,7 @@ export default function App() {
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>(loadLeaderboard);
   const [currentLevel, setCurrentLevel] = useState<LevelConfig>(LEVELS[0]);
   const [lastResult, setLastResult] = useState<LevelResult>({ score: 0, stars: 0 });
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const totalStars = Object.values(progress).reduce((a, b) => a + b, 0);
 
@@ -135,6 +137,30 @@ export default function App() {
     if (playerName) setScreen('level-select');
     else setScreen('name-input');
   }, [playerName]);
+
+  useEffect(() => {
+    const audio = new Audio(backgroundMusic);
+    audio.loop = true;
+    audio.volume = 0.22;
+    audio.preload = 'auto';
+    audioRef.current = audio;
+
+    const startPlayback = () => {
+      audio.play().catch(() => {});
+    };
+
+    startPlayback();
+    window.addEventListener('pointerdown', startPlayback);
+    window.addEventListener('keydown', startPlayback);
+
+    return () => {
+      window.removeEventListener('pointerdown', startPlayback);
+      window.removeEventListener('keydown', startPlayback);
+      audio.pause();
+      audio.currentTime = 0;
+      audioRef.current = null;
+    };
+  }, []);
 
   return (
     <div className="w-screen h-screen bg-[#0A0E1A] relative overflow-hidden" style={{ fontFamily: 'Inter, sans-serif' }}>
