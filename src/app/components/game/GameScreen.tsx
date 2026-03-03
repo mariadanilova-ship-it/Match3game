@@ -107,6 +107,9 @@ function ObjectivesBar({ objectives, levelConfig }: {
   objectives: Record<number, number>;
   levelConfig: LevelConfig;
 }) {
+  const isMultiRow = levelConfig.objectives.length > 3;
+  const fixedWidth = 'calc((100% - 16px) / 3)';
+
   return (
     <div className="flex gap-2 flex-wrap">
       {levelConfig.objectives.map((obj) => {
@@ -116,8 +119,10 @@ function ObjectivesBar({ objectives, levelConfig }: {
         const bug = BUG_TYPES[obj.bugType];
         return (
           <div key={obj.bugType}
-            className="flex-1 min-w-[60px] flex flex-col gap-1 px-2 py-1.5 rounded-xl"
+            className="flex flex-col gap-1 px-2 py-1.5 rounded-xl"
             style={{
+              flex: isMultiRow ? `0 0 ${fixedWidth}` : '1 1 0%',
+              minWidth: isMultiRow ? fixedWidth : 0,
               background: done ? `${bug.darkBg}CC` : '#0F1629',
               border: `1.5px solid ${done ? bug.color + '66' : '#1E2D4E'}`,
               boxShadow: done ? `0 0 8px ${bug.color}22` : 'none',
